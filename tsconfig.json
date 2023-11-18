@@ -1,0 +1,7 @@
+{
+  "include": ["src"],
+  "exclude": ["test", "build"],
+  "compilerOptions": {
+    "strict": true
+  }
+}
