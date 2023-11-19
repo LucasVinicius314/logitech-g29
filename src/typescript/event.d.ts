@@ -1,10 +1,15 @@
-export type LogitechG29GeneralEvent = 'all' | 'changes' | 'data'
+export type LogitechG29Event =
+  | LogitechG29GeneralEvent
+  | LogitechG29PedalsEvent
+  | LogitechG29ShifterEvent
+  | LogitechG29WheelEvent
 
-export type LogitechG29Options = {
-  autocenter: boolean
-  debug: boolean
-  range: number
-}
+export type LogitechG29GeneralEvent =
+  | 'all'
+  | 'changes'
+  | 'data'
+  | 'error'
+  | 'ready'
 
 export type LogitechG29PedalsEvent =
   | 'pedals-brake'

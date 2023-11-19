@@ -2,7 +2,7 @@ import * as hid from 'node-hid'
 
 import { Chalk } from 'chalk'
 import { DeviceError } from './errors/device-error'
-import { LogitechG29Options } from './typescript'
+import { LogitechG29Options } from './typescript/options'
 
 const chalk = new Chalk()
 

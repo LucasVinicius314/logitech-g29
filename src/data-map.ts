@@ -102,91 +102,170 @@
         If pressed down, the user is probably preparing to go into reverse. (not used)
 */
 
-import { RigState as LogitechG29State } from './models/rig-state'
+import { LogitechG29State } from './models/logitech-g29-state'
 
 /**
- * Figure out what has changed since the last event and call relevant functions to translate those changes to a memory object.
- * @param dataDiffPositions An array.
+ * Update what has changed since the last event.
  * @param data Buffer data from a node-hid event.
- * @param state Modified memory object.
+ * @param lastData Last saved buffer data from a node-hid event.
+ * @param state The rig state.
  */
 export function updateState(
   data: number[],
   lastData: number[],
   state: LogitechG29State
 ) {
+  const changes: LogitechG29State = {}
+
   for (let index = 0; index < data.length; index++) {
     if (data[index] !== lastData[index]) {
       switch (index) {
         case 0:
           const value0 = data[0]
 
-          state.wheel.dpad = wheelDpad(value0)
-          state.wheel.buttonX = value0 & 16 ? 1 : 0
-          state.wheel.buttonSquare = value0 & 32 ? 1 : 0
-          state.wheel.buttonCircle = value0 & 64 ? 1 : 0
-          state.wheel.buttonTriangle = value0 & 128 ? 1 : 0
+          compareState({
+            state,
+            changes,
+            pairs: {
+              'wheel-dpad': wheelDpad(value0),
+              'wheel-button_x': value0 & 16 ? 1 : 0,
+              'wheel-button_square': value0 & 32 ? 1 : 0,
+              'wheel-button_circle': value0 & 64 ? 1 : 0,
+              'wheel-button_triangle': value0 & 128 ? 1 : 0,
+            },
+          })
 
           break
         case 1:
           const value1 = data[1]
 
-          state.wheel.shiftRight = value1 & 1
-          state.wheel.shiftLeft = value1 & 2 ? 1 : 0
-          state.wheel.buttonR2 = value1 & 4 ? 1 : 0
-          state.wheel.buttonL2 = value1 & 8 ? 1 : 0
-          state.wheel.buttonShare = value1 & 16 ? 1 : 0
-          state.wheel.buttonOption = value1 & 32 ? 1 : 0
-          state.wheel.buttonR3 = value1 & 64 ? 1 : 0
-          state.wheel.buttonL3 = value1 & 128 ? 1 : 0
+          compareState({
+            state,
+            changes,
+            pairs: {
+              'wheel-shift_right': value1 & 1,
+              'wheel-shift_left': value1 & 2 ? 1 : 0,
+              'wheel-button_r2': value1 & 4 ? 1 : 0,
+              'wheel-button_l2': value1 & 8 ? 1 : 0,
+              'wheel-button_share': value1 & 16 ? 1 : 0,
+              'wheel-button_option': value1 & 32 ? 1 : 0,
+              'wheel-button_r3': value1 & 64 ? 1 : 0,
+              'wheel-button_l3': value1 & 128 ? 1 : 0,
+            },
+          })
 
           break
         case 2:
           const value2 = data[2]
 
-          state.shifter.gear = shifterGear(value2)
-          state.wheel.buttonPlus = value2 & 128 ? 1 : 0
+          compareState({
+            state,
+            changes,
+            pairs: {
+              'shifter-gear': shifterGear(value2),
+              'wheel-button_plus': value2 & 128 ? 1 : 0,
+            },
+          })
 
           break
         case 3:
           const value3 = data[3]
 
-          state.wheel.buttonMinus = value3 & 1
+          let spinner = 0
 
           if (value3 & 2) {
-            state.wheel.spinner = 1
+            spinner = 1
           } else if (value3 & 4) {
-            state.wheel.spinner = -1
-          } else {
-            state.wheel.spinner = 0
+            spinner = -1
           }
 
-          state.wheel.buttonSpinner = value3 & 8 ? 1 : 0
-          state.wheel.buttonPlaystation = value3 & 16 ? 1 : 0
+          compareState({
+            state,
+            changes,
+            pairs: {
+              'wheel-spinner': spinner,
+              'wheel-button_minus': value3 & 1,
+              'wheel-button_spinner': value3 & 8 ? 1 : 0,
+              'wheel-button_playstation': value3 & 16 ? 1 : 0,
+            },
+          })
 
           break
         case 4:
         case 5:
-          state.wheel.turn = wheelTurn(data)
+          compareState({
+            state,
+            changes,
+            pairs: {
+              'wheel-turn': wheelTurn(data),
+            },
+          })
 
           break
         case 6:
-          state.pedals.gas = pedalToPercent(data[6])
+          compareState({
+            state,
+            changes,
+            pairs: {
+              'pedals-gas': pedalToPercent(data[6]),
+            },
+          })
 
           break
         case 7:
-          state.pedals.brake = pedalToPercent(data[7])
+          compareState({
+            state,
+            changes,
+            pairs: {
+              'pedals-brake': pedalToPercent(data[7]),
+            },
+          })
 
           break
         case 8:
-          state.pedals.clutch = pedalToPercent(data[8])
+          compareState({
+            state,
+            changes,
+            pairs: {
+              'pedals-clutch': pedalToPercent(data[8]),
+            },
+          })
 
           break
         case 11:
-          state.shifter.gear = shifterGear(data[2]) // for reverse
+          // For reverse.
+          compareState({
+            state,
+            changes,
+            pairs: {
+              'shifter-gear': shifterGear(data[2]),
+            },
+          })
 
           break
       }
+    }
+  }
+
+  return changes
+}
+
+// TODO: fix, test
+function compareState({
+  changes,
+  pairs,
+  state,
+}: {
+  state: LogitechG29State
+  changes: LogitechG29State
+  pairs: LogitechG29State
+}) {
+  for (const key in pairs) {
+    const value = pairs[key]
+
+    if (state[key] !== value) {
+      state[key] = value
+      changes[key] = value
     }
   }
 }
@@ -230,31 +309,31 @@ function round(num: number, exp: number) {
 function wheelDpad(value: number) {
   switch (reduceNumberFromTo(value, 8)) {
     case 8:
-      // neutral
+      // Neutral.
       return 0
     case 7:
-      // top left
+      // Top left.
       return 8
     case 6:
-      // left
+      // Left.
       return 7
     case 5:
-      // bottom left
+      // Bottom left.
       return 6
     case 4:
-      // bottom
+      // Bottom.
       return 5
     case 3:
-      // bottom right
+      // Bottom right.
       return 4
     case 2:
-      // right
+      // Right.
       return 3
     case 1:
-      // top right
+      // Top right.
       return 2
     case 0:
-      // top
+      // Top.
       return 1
     default:
       return 0
@@ -262,8 +341,8 @@ function wheelDpad(value: number) {
 }
 
 function wheelTurn(data: number[]) {
-  const wheelFine = (data[4] / 255) * (100 / 256) // returns a number between 0 and 0.390625
-  const wheelCourse = (data[5] / 255) * (100 - 100 / 256) // returns a number between 0 and 99.609375
+  const wheelFine = (data[4] / 255) * (100 / 256) // Returns a number between 0 and 0.390625.
+  const wheelCourse = (data[5] / 255) * (100 - 100 / 256) // Returns a number between 0 and 99.609375.
 
   return Math.min(Math.max(round(wheelCourse + wheelFine, 2), 0), 100)
 }
@@ -275,28 +354,28 @@ function pedalToPercent(num: number) {
 function shifterGear(value: number) {
   switch (reduceNumberFromTo(value, 64)) {
     case 0:
-      // neutral
+      // Neutral.
       return 0
     case 1:
-      // first gear
+      // First gear.
       return 1
     case 2:
-      // second gear
+      // Second gear.
       return 2
     case 4:
-      // third gear
+      // Third gear.
       return 3
     case 8:
-      // fourth gear
+      // Fourth gear.
       return 4
     case 16:
-      // fifth gear
+      // Fifth gear.
       return 5
     case 32:
-      // sixth gear
+      // Sixth gear.
       return 6
     case 64:
-      // reverse gear
+      // Reverse gear.
       return -1
     default:
       return 0

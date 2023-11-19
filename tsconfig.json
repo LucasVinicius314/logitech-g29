@@ -1,9 +1,10 @@
 {
-  "include": ["src"],
-  "exclude": ["test", "build"],
   "compilerOptions": {
-    "strict": true,
     "lib": ["ES2023"],
-    "sourceMap": true
-  }
+    "outDir": "build",
+    "sourceMap": true,
+    "strict": true
+  },
+  "exclude": ["build", "test"],
+  "include": ["src"]
 }
