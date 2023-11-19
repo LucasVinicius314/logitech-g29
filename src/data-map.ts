@@ -102,55 +102,93 @@
         If pressed down, the user is probably preparing to go into reverse. (not used)
 */
 
-import { Memory } from './typescript'
+import { RigState as LogitechG29State } from './models/rig-state'
 
 /**
  * Figure out what has changed since the last event and call relevant functions to translate those changes to a memory object.
  * @param dataDiffPositions An array.
  * @param data Buffer data from a node-hid event.
- * @param memory Modified memory object.
+ * @param state Modified memory object.
  */
-export function dataMap(
-  dataDiffPositions: number[],
+export function updateState(
   data: number[],
-  memory: Memory
+  lastData: number[],
+  state: LogitechG29State
 ) {
-  for (let i in dataDiffPositions) {
-    switch (dataDiffPositions[i]) {
-      case 0:
-        memory = wheelDpad(data, memory)
-        memory = wheelButtonsSymbols(data, memory)
-        break
-      case 1:
-        memory = wheelShiftPedals(data, memory)
-        memory = wheelButtons(data, memory)
-        break
-      case 2:
-        memory = shifterGear(data, memory)
-        memory = wheelButtonPlus(data, memory)
-        break
-      case 3:
-        memory = wheelSpinnerAndButtons(data, memory)
-        break
-      case 4:
-      case 5:
-        memory = wheelTurn(data, memory)
-        break
-      case 6:
-        memory = pedalsGas(data, memory)
-        break
-      case 7:
-        memory = pedalsBrake(data, memory)
-        break
-      case 8:
-        memory = pedalsClutch(data, memory)
-        break
-      case 11:
-        memory = shifterGear(data, memory) // for reverse
+  for (let index = 0; index < data.length; index++) {
+    if (data[index] !== lastData[index]) {
+      switch (index) {
+        case 0:
+          const value0 = data[0]
+
+          state.wheel.dpad = wheelDpad(value0)
+          state.wheel.buttonX = value0 & 16 ? 1 : 0
+          state.wheel.buttonSquare = value0 & 32 ? 1 : 0
+          state.wheel.buttonCircle = value0 & 64 ? 1 : 0
+          state.wheel.buttonTriangle = value0 & 128 ? 1 : 0
+
+          break
+        case 1:
+          const value1 = data[1]
+
+          state.wheel.shiftRight = value1 & 1
+          state.wheel.shiftLeft = value1 & 2 ? 1 : 0
+          state.wheel.buttonR2 = value1 & 4 ? 1 : 0
+          state.wheel.buttonL2 = value1 & 8 ? 1 : 0
+          state.wheel.buttonShare = value1 & 16 ? 1 : 0
+          state.wheel.buttonOption = value1 & 32 ? 1 : 0
+          state.wheel.buttonR3 = value1 & 64 ? 1 : 0
+          state.wheel.buttonL3 = value1 & 128 ? 1 : 0
+
+          break
+        case 2:
+          const value2 = data[2]
+
+          state.shifter.gear = shifterGear(value2)
+          state.wheel.buttonPlus = value2 & 128 ? 1 : 0
+
+          break
+        case 3:
+          const value3 = data[3]
+
+          state.wheel.buttonMinus = value3 & 1
+
+          if (value3 & 2) {
+            state.wheel.spinner = 1
+          } else if (value3 & 4) {
+            state.wheel.spinner = -1
+          } else {
+            state.wheel.spinner = 0
+          }
+
+          state.wheel.buttonSpinner = value3 & 8 ? 1 : 0
+          state.wheel.buttonPlaystation = value3 & 16 ? 1 : 0
+
+          break
+        case 4:
+        case 5:
+          state.wheel.turn = wheelTurn(data)
+
+          break
+        case 6:
+          state.pedals.gas = pedalToPercent(data[6])
+
+          break
+        case 7:
+          state.pedals.brake = pedalToPercent(data[7])
+
+          break
+        case 8:
+          state.pedals.clutch = pedalToPercent(data[8])
+
+          break
+        case 11:
+          state.shifter.gear = shifterGear(data[2]) // for reverse
+
+          break
+      }
     }
   }
-
-  return memory
 }
 
 /**
@@ -184,201 +222,83 @@ function reduceNumberFromTo(num: number, to: number) {
  * @param exp Number of places to round to.
  */
 function round(num: number, exp: number) {
-  if (exp === 0) {
-    return Math.round(num)
-  }
+  const factor = Math.pow(10, exp)
 
-  if (isNaN(num) || exp % 1 !== 0) {
-    return NaN
-  }
-
-  // Shift
-  num = num.toString().split('e')
-  num = Math.round(+(num[0] + 'e' + (num[1] ? +num[1] + exp : exp)))
-
-  // Shift back
-  num = num.toString().split('e')
-  return +(num[0] + 'e' + (num[1] ? +num[1] - exp : -exp))
+  return Math.round(num * factor) / factor
 }
 
-function wheelButtonPlus(data, memory) {
-  memory.wheel.button_plus = data[2] & 128 ? 1 : 0
-
-  return memory
-}
-
-function wheelButtons(data, memory) {
-  let d = data[1]
-
-  memory.wheel.button_r2 = d & 4 ? 1 : 0
-  memory.wheel.button_l2 = d & 8 ? 1 : 0
-
-  memory.wheel.button_share = d & 16 ? 1 : 0
-  memory.wheel.button_option = d & 32 ? 1 : 0
-  memory.wheel.button_r3 = d & 64 ? 1 : 0
-  memory.wheel.button_l3 = d & 128 ? 1 : 0
-
-  return memory
-}
-
-function wheelButtonsSymbols(data, memory) {
-  let d = data[0]
-
-  memory.wheel.button_x = d & 16 ? 1 : 0
-  memory.wheel.button_square = d & 32 ? 1 : 0
-  memory.wheel.button_circle = d & 64 ? 1 : 0
-  memory.wheel.button_triangle = d & 128 ? 1 : 0
-
-  return memory
-}
-
-function wheelDpad(data: number[], memory) {
-  let dpad = reduceNumberFromTo(data[0], 8)
-
-  switch (dpad) {
+function wheelDpad(value: number) {
+  switch (reduceNumberFromTo(value, 8)) {
     case 8:
       // neutral
-      memory.wheel.dpad = 0
-      break
+      return 0
     case 7:
       // top left
-      memory.wheel.dpad = 8
-      break
+      return 8
     case 6:
       // left
-      memory.wheel.dpad = 7
-      break
+      return 7
     case 5:
       // bottom left
-      memory.wheel.dpad = 6
-      break
+      return 6
     case 4:
       // bottom
-      memory.wheel.dpad = 5
-      break
+      return 5
     case 3:
       // bottom right
-      memory.wheel.dpad = 4
-      break
+      return 4
     case 2:
       // right
-      memory.wheel.dpad = 3
-      break
+      return 3
     case 1:
       // top right
-      memory.wheel.dpad = 2
-      break
+      return 2
     case 0:
       // top
-      memory.wheel.dpad = 1
+      return 1
+    default:
+      return 0
   }
-
-  return memory
 }
 
-function wheelShiftPedals(data, memory) {
-  let d = data[1]
+function wheelTurn(data: number[]) {
+  const wheelFine = (data[4] / 255) * (100 / 256) // returns a number between 0 and 0.390625
+  const wheelCourse = (data[5] / 255) * (100 - 100 / 256) // returns a number between 0 and 99.609375
 
-  memory.wheel.shift_right = d & 1
-  memory.wheel.shift_left = d & 2 ? 1 : 0
-
-  return memory
-}
-
-function wheelSpinnerAndButtons(data, memory) {
-  let d = data[3]
-
-  memory.wheel.button_minus = d & 1
-
-  if (d & 2) {
-    memory.wheel.spinner = 1
-  } else if (d & 4) {
-    memory.wheel.spinner = -1
-  } else {
-    memory.wheel.spinner = 0
-  }
-
-  memory.wheel.button_spinner = d & 8 ? 1 : 0
-  memory.wheel.button_playstation = d & 16 ? 1 : 0
-
-  return memory
-}
-
-function wheelTurn(data, memory) {
-  let wheelCourse = data[5] // 0-255
-  let wheelFine = data[4] // 0-255
-
-  wheelCourse = (wheelCourse / 255) * (100 - 100 / 256) // returns a number between 0 and 99.609375
-  wheelFine = (wheelFine / 255) * (100 / 256) // returns a number between 0 and 0.390625
-
-  let wheel = round(wheelCourse + wheelFine, 2)
-
-  if (wheel > 100) wheel = 100 // wheel turned completely right
-
-  if (wheel < 0) wheel = 0 // wheel turned completely left
-
-  memory.wheel.turn = wheel
-
-  return memory
-}
-
-function pedalsBrake(data, memory) {
-  memory.pedals.brake = pedalToPercent(data[7])
-  return memory
-}
-
-function pedalsClutch(data, memory) {
-  memory.pedals.clutch = pedalToPercent(data[8])
-  return memory
-}
-
-function pedalsGas(data, memory) {
-  memory.pedals.gas = pedalToPercent(data[6])
-  return memory
+  return Math.min(Math.max(round(wheelCourse + wheelFine, 2), 0), 100)
 }
 
 function pedalToPercent(num: number) {
   return round(Math.abs(num - 255) / 255, 2)
 }
 
-function shifterGear(data, memory) {
-  let stick = data[2]
-
-  stick = reduceNumberFromTo(stick, 64)
-
-  switch (stick) {
+function shifterGear(value: number) {
+  switch (reduceNumberFromTo(value, 64)) {
     case 0:
       // neutral
-      memory.shifter.gear = 0
-      break
+      return 0
     case 1:
       // first gear
-      memory.shifter.gear = 1
-      break
+      return 1
     case 2:
       // second gear
-      memory.shifter.gear = 2
-      break
+      return 2
     case 4:
       // third gear
-      memory.shifter.gear = 3
-      break
+      return 3
     case 8:
       // fourth gear
-      memory.shifter.gear = 4
-      break
+      return 4
     case 16:
       // fifth gear
-      memory.shifter.gear = 5
-      break
+      return 5
     case 32:
       // sixth gear
-      memory.shifter.gear = 6
-      break
+      return 6
     case 64:
       // reverse gear
-      memory.shifter.gear = -1
+      return -1
+    default:
+      return 0
   }
-
-  return memory
 }

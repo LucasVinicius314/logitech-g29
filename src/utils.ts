@@ -2,14 +2,14 @@ import * as hid from 'node-hid'
 
 import { Chalk } from 'chalk'
 import { DeviceError } from './errors/device-error'
-import { Options } from './typescript'
+import { LogitechG29Options } from './typescript'
 
 const chalk = new Chalk()
 
 /**
  * Return the USB location of a Logitech G29 wheel.
  */
-export function getWheelDevicePath(options: Options): string {
+export function getWheelDevicePath(options: LogitechG29Options): string {
   const devicePath = hid.devices().find(
     (device) =>
       // device.vendorId seems to be the only completely reliable property on each OS.

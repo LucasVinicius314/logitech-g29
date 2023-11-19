@@ -1,0 +1,21 @@
+export class WheelState {
+  buttonCircle: number = 0
+  buttonL2: number = 0
+  buttonL3: number = 0
+  buttonMinus: number = 0
+  buttonOption: number = 0
+  buttonPlaystation: number = 0
+  buttonPlus: number = 0
+  buttonR2: number = 0
+  buttonR3: number = 0
+  buttonShare: number = 0
+  buttonSpinner: number = 0
+  buttonSquare: number = 0
+  buttonTriangle: number = 0
+  buttonX: number = 0
+  dpad: number = 0
+  shiftLeft: number = 0
+  shiftRight: number = 0
+  spinner: number = 0
+  turn: number = 50
+}

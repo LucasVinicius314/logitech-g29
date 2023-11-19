@@ -1,43 +1,35 @@
-export type Options = {
+export type LogitechG29GeneralEvent = 'all' | 'changes' | 'data'
+
+export type LogitechG29Options = {
   autocenter: boolean
   debug: boolean
   range: number
 }
 
-export type Memory = {
-  pedals: PedalsMemory
-  shifter: ShifterMemory
-  wheel: WheelMemory
-}
+export type LogitechG29PedalsEvent =
+  | 'pedals-brake'
+  | 'pedals-clutch'
+  | 'pedals-gas'
 
-export type PedalsMemory = {
-  brake: number
-  clutch: number
-  gas: number
-}
+export type LogitechG29ShifterEvent = 'shifter-gear'
 
-export type ShifterMemory = {
-  gear: number
-}
-
-export type WheelMemory = {
-  button_circle: number
-  button_l2: number
-  button_l3: number
-  button_minus: number
-  button_option: number
-  button_playstation: number
-  button_plus: number
-  button_r2: number
-  button_r3: number
-  button_share: number
-  button_spinner: number
-  button_square: number
-  button_triangle: number
-  button_x: number
-  dpad: number
-  shift_left: number
-  shift_right: number
-  spinner: number
-  turn: number
-}
+export type LogitechG29WheelEvent =
+  | 'wheel-button_circle'
+  | 'wheel-button_l2'
+  | 'wheel-button_l3'
+  | 'wheel-button_minus'
+  | 'wheel-button_option'
+  | 'wheel-button_playstation'
+  | 'wheel-button_plus'
+  | 'wheel-button_r2'
+  | 'wheel-button_r3'
+  | 'wheel-button_share'
+  | 'wheel-button_spinner'
+  | 'wheel-button_square'
+  | 'wheel-button_triangle'
+  | 'wheel-button_x'
+  | 'wheel-dpad'
+  | 'wheel-shift_left'
+  | 'wheel-shift_right'
+  | 'wheel-spinner'
+  | 'wheel-turn'
