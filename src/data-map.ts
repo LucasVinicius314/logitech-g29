@@ -262,7 +262,7 @@ function compareState({
   for (const key in pairs) {
     const value = pairs[key]
 
-    if (state[key] ?? 0 !== value) {
+    if ((state[key] ?? 0) !== value) {
       state[key] = value
       changes[key] = value
     }

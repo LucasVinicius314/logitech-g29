@@ -348,15 +348,3 @@ export class LogitechG29 {
     this.relayOS([0xf8, 0x81, range1, range2, 0x00, 0x00, 0x00])
   }
 }
-
-const g = new LogitechG29({ autocenter: false, debug: true, range: 900 })
-
-const main = async () => {
-  await g.connect()
-
-  g.on('pedals-gas', (data) => {
-    console.log(data)
-  })
-}
-
-main()
