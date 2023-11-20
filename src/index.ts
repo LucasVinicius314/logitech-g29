@@ -1,15 +1,13 @@
+import * as colorette from 'colorette'
 import * as events from 'events'
 import * as hid from 'node-hid'
 import * as os from 'os'
 
-import { Chalk } from 'chalk'
 import { LogitechG29Event } from './typescript/event'
 import { LogitechG29Options } from './typescript/options'
-import { LogitechG29State } from './models/logitech-g29-state'
+import { LogitechG29State } from './typescript/state'
 import { getWheelDevicePath } from './utils'
 import { updateState } from './data-map'
-
-const chalk = new Chalk()
 
 export class LogitechG29 {
   constructor(options: LogitechG29Options) {
@@ -23,7 +21,7 @@ export class LogitechG29 {
     }
 
     if (options.debug) {
-      console.log(chalk.cyan('userOptions -> '), options)
+      console.log(colorette.cyan('userOptions -> '), options)
     }
   }
 
@@ -84,7 +82,10 @@ export class LogitechG29 {
       this.device.read((err: any, data) => {
         if (err) {
           if (this.options.debug) {
-            console.log(chalk.red('connect -> Error reading from device.'), err)
+            console.log(
+              colorette.red('connect -> Error reading from device.'),
+              err
+            )
           }
 
           reject(err)
@@ -96,7 +97,9 @@ export class LogitechG29 {
 
             if (this.options.debug) {
               console.log(
-                chalk.cyan('connect -> Wheel already in high precision mode.')
+                colorette.cyan(
+                  'connect -> Wheel already in high precision mode.'
+                )
               )
             }
 
@@ -107,7 +110,7 @@ export class LogitechG29 {
             // Wheel is not in high precision mode.
 
             if (this.options.debug) {
-              console.log(chalk.cyan('connect -> Initing'))
+              console.log(colorette.cyan('connect -> Initing'))
             }
 
             try {
@@ -282,7 +285,7 @@ export class LogitechG29 {
       }
 
       // Emit everything in for all events.
-      this.eventEmitter.emit('all', structuredClone(this.state))
+      this.eventEmitter.emit('all', JSON.parse(JSON.stringify(this.state)))
 
       // Emit raw data.
       this.eventEmitter.emit('data', data)
@@ -292,7 +295,7 @@ export class LogitechG29 {
 
     this.device?.on('error', (err) => {
       if (this.options.debug) {
-        console.log(chalk.red('device error -> '), JSON.stringify(err), err)
+        console.log(colorette.red('device error -> '), JSON.stringify(err), err)
       }
 
       this.eventEmitter.emit('error', err)
@@ -301,7 +304,7 @@ export class LogitechG29 {
     this.leds(0)
 
     if (this.options.debug) {
-      console.log(chalk.cyan('listen -> listening'))
+      console.log(colorette.cyan('listen -> listening'))
     }
 
     this.eventEmitter.emit('ready')
@@ -345,3 +348,15 @@ export class LogitechG29 {
     this.relayOS([0xf8, 0x81, range1, range2, 0x00, 0x00, 0x00])
   }
 }
+
+const g = new LogitechG29({ autocenter: false, debug: true, range: 900 })
+
+const main = async () => {
+  await g.connect()
+
+  g.on('pedals-gas', (data) => {
+    console.log(data)
+  })
+}
+
+main()

@@ -1,8 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["ES2023"],
+    "lib": ["ES2022"],
     "outDir": "build",
+    "rootDir": "src",
     "sourceMap": true,
+    "skipLibCheck": true,
     "strict": true
   },
   "exclude": ["build", "test"],

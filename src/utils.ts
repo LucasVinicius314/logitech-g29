@@ -1,10 +1,8 @@
+import * as colorette from 'colorette'
 import * as hid from 'node-hid'
 
-import { Chalk } from 'chalk'
 import { DeviceError } from './errors/device-error'
 import { LogitechG29Options } from './typescript/options'
-
-const chalk = new Chalk()
 
 /**
  * Return the USB location of a Logitech G29 wheel.
@@ -26,13 +24,13 @@ export function getWheelDevicePath(options: LogitechG29Options): string {
   if (options.debug) {
     if (devicePath === undefined) {
       console.log(
-        chalk.yellow(
+        colorette.yellow(
           'getWheelDevicePath -> Oops, could not find a G29 Wheel. Is it plugged in?\n'
         )
       )
     } else {
       console.log(
-        `${chalk.cyan(
+        `${colorette.cyan(
           'getWheelDevicePath -> Found G29 Wheel at'
         )} ${devicePath}`
       )

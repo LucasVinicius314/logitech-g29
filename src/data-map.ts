@@ -102,7 +102,7 @@
         If pressed down, the user is probably preparing to go into reverse. (not used)
 */
 
-import { LogitechG29State } from './models/logitech-g29-state'
+import { LogitechG29State } from './typescript/state'
 
 /**
  * Update what has changed since the last event.
@@ -250,7 +250,6 @@ export function updateState(
   return changes
 }
 
-// TODO: fix, test
 function compareState({
   changes,
   pairs,
@@ -263,7 +262,7 @@ function compareState({
   for (const key in pairs) {
     const value = pairs[key]
 
-    if (state[key] !== value) {
+    if (state[key] ?? 0 !== value) {
       state[key] = value
       changes[key] = value
     }
